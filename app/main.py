@@ -172,30 +172,84 @@ def _liquid_cash_series(fx) -> list:
 
 
 @app.get("/", response_class=HTMLResponse)
-def page_dashboard(request: Request):
+def page_dashboard(request: Request, month: str = ""):
     t = today()
     m = queries.dashboard(t)
     fx = m["fx_rate"]
 
-    # 1) liquid-cash trend: last 30 days vs previous 30 days
-    all_rows = queries.balance_history_window(60)  # ascending (oldest first)
-    latest_date = all_rows[-1]["snap_date"] if all_rows else t
-    def _normalized(offset_start, offset_end):
-        """Return 30-element list of (label, value) or None for missing days.
-        Position i corresponds to day offset (offset_start + i)."""
-        pts = [None] * 30
-        for r in all_rows:
-            off = (r["snap_date"] - latest_date).days
-            if offset_start <= off <= offset_end:
-                idx = off - offset_start
-                pts[idx] = (
-                    r["snap_date"].strftime("%-d %b"),
-                    float((queries.d2(r["net_sgd"]) + queries.d2(r["net_myr"]) * fx).quantize(queries.TWO)),
+    # Parse requested month (YYYY-MM), default to current
+    import calendar as cal_mod
+    from datetime import timedelta
+
+    if month:
+        try:
+            parts = month.split("-")
+            m_year, m_month = int(parts[0]), int(parts[1])
+        except (ValueError, IndexError):
+            m_year, m_month = t.year, t.month
+    else:
+        m_year, m_month = t.year, t.month
+
+    # Previous month
+    if m_month == 1:
+        prev_year, prev_month = m_year - 1, 12
+    else:
+        prev_year, prev_month = m_year, m_month - 1
+
+    # Next month (for navigation)
+    if m_month == 12:
+        next_year, next_month = m_year + 1, 1
+    else:
+        next_year, next_month = m_year, m_month + 1
+
+    # Fetch both months
+    cur_rows = queries.balance_history_calendar_month(m_year, m_month)
+    # Filter to exact calendar month
+    cur_rows = [r for r in cur_rows
+                if r["snap_date"].year == m_year and r["snap_date"].month == m_month]
+    prev_rows = queries.balance_history_calendar_month(prev_year, prev_month)
+    prev_rows = [r for r in prev_rows
+                 if r["snap_date"].year == prev_year and r["snap_date"].month == prev_month]
+
+    cur_days = cal_mod.monthrange(m_year, m_month)[1]
+    prev_days = cal_mod.monthrange(prev_year, prev_month)[1]
+    max_days = max(cur_days, prev_days)
+
+    # Build day-of-month aligned slots for comparison_line_chart
+    # Each series: 31-element list (day 1..31) of (label, value) or None
+    # Current month truncates at today; previous month shows full month
+    def _build_series(rows, year, month_val, num_days, cap_day=None):
+        """Build a list of (day_label, combined_sgd) indexed by day-of-month (1-based)."""
+        pts = [None] * max_days
+        limit = min(cap_day, max_days) if cap_day else num_days
+        for r in rows:
+            day = r["snap_date"].day
+            if 1 <= day <= limit:
+                combined = float(
+                    (queries.d2(r["net_sgd"]) + queries.d2(r["net_myr"]) * fx).quantize(queries.TWO)
                 )
+                idx = day - 1
+                pts[idx] = (r["snap_date"].strftime("%-d %b"), combined)
         return pts
-    cur_pts = _normalized(-29, 0)    # current 30 days → slots 0..29
-    prev_pts = _normalized(-59, -30) # previous 30 days → slots 0..29
-    nw_svg = charts.comparison_line_chart(cur_pts, prev_pts)
+
+    # Truncate current month at today only when viewing the current month
+    today_cap = t.day if (m_year == t.year and m_month == t.month) else None
+    cur_pts = _build_series(cur_rows, m_year, m_month, cur_days, cap_day=today_cap)
+    prev_pts = _build_series(prev_rows, prev_year, prev_month, prev_days)
+
+    cur_month_label = f"{cal_mod.month_name[m_month]} {m_year}"
+    prev_month_label = f"{cal_mod.month_name[prev_month]} {prev_year}"
+    nw_svg = charts.comparison_line_chart(
+        cur_pts, prev_pts,
+        cur_label=cur_month_label,
+        prev_label=prev_month_label,
+    )
+
+    # Month navigation
+    prev_month_str = f"{prev_year}-{prev_month:02d}"
+    next_month_str = f"{next_year}-{next_month:02d}"
+    # Show next month link only if not in the future
+    show_next = date(next_year, next_month, 1) <= t.replace(day=1)
 
     # 2) spend by category (donut + legend), SGD-equivalent
     cat_segs, cat_legend = [], []
@@ -214,9 +268,6 @@ def page_dashboard(request: Request):
     # 3) daily discretionary spend trend (bars, day 1..elapsed)
     ds = queries.daily_spend(t.replace(day=1), t, discretionary_only=True)
     elapsed = m["days_elapsed"]
-    # Show value labels on all non-zero bars when ≤14 days; above that, only
-    # on day-label bars (1st, every 5th, last) + the most recent 7 days to
-    # avoid label soup at month-end.
     bars = [{
         "label": str(day),
         "value": float(ds.get(t.replace(day=day), 0)),
@@ -236,7 +287,9 @@ def page_dashboard(request: Request):
     return templates.TemplateResponse(
         "dashboard.html",
         base_ctx(request, m=m, nw_svg=nw_svg, donut_svg=donut_svg,
-                 bars_svg=bars_svg, cat_legend=cat_legend, fx_updated=fx_updated),
+                 bars_svg=bars_svg, cat_legend=cat_legend, fx_updated=fx_updated,
+                 cur_month=cur_month_label, prev_month_str=prev_month_str,
+                 next_month_str=next_month_str, show_next=show_next),
     )
 
 

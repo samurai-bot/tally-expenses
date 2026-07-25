@@ -320,6 +320,13 @@ body { padding-bottom: 80px; }
 .swatch.myr { background: #22d3ee; }
 .hero-chart { margin: 6px -8px 0; }
 
+/* month-on-month navigation  */
+.month-nav { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.month-nav .month-label { font-size: .82rem; color: var(--text); font-weight: 600; min-width: 100px; text-align: center; }
+.month-nav .month-arrow { font-size: .85rem; color: var(--muted); text-decoration: none; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--border); background: rgba(8,13,24,.45); transition: color .15s, border-color .15s; }
+.month-nav .month-arrow:hover { color: #3b82f6; border-color: #3b82f660; }
+.month-nav .month-arrow.disabled { opacity: .3; pointer-events: none; }
+
 /* donut + tiles row */
 .dash-row { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 14px; }
 .donut-wrap { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }

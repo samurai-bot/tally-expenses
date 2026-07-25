@@ -19,12 +19,22 @@
 <!-- HERO: liquid cash + trend -->
 <section class="hero">
   <div class="hero-main">
-    <div class="hero-label">Liquid cash · Combined SGD <span class="muted">(30-day rolling vs prior)</span></div>
+    <div class="hero-label">Liquid cash · Combined SGD <span class="muted">(month-on-month)</span></div>
     <div class="hero-value">{{ m.net_cash.combined_sgd | money }}</div>
     <div class="hero-sub">
       <span class="chip"><i class="swatch sgd"></i>Net SGD <b>{{ m.net_cash.SGD | money }}</b></span>
       <span class="chip"><i class="swatch myr"></i>Net MYR <b>{{ m.net_cash.MYR | money }}</b></span>
       <span class="chip muted">FX {{ m.fx_rate }}</span>
+    </div>
+    <!-- Month navigation -->
+    <div class="month-nav">
+      <a href="/?month={{ prev_month_str }}" class="month-arrow" title="Previous month">◀</a>
+      <span class="month-label">{{ cur_month }}</span>
+      {% if show_next %}
+      <a href="/?month={{ next_month_str }}" class="month-arrow" title="Next month">▶</a>
+      {% else %}
+      <span class="month-arrow disabled" title="Current month">▶</span>
+      {% endif %}
     </div>
   </div>
   <div class="hero-chart">{{ nw_svg | safe }}</div>

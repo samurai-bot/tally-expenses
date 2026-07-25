@@ -685,6 +685,49 @@ def balance_history_window(days: int) -> list[dict]:
     )
 
 
+def balance_history_calendar_month(year: int, month: int) -> list[dict]:
+    """Daily combined SGD liquid cash for a calendar month (every day, carry-forward).
+
+    Uses generate_series to produce a row for every calendar day. The carry-forward
+    subquery pulls the most recent balance snapshot per account on or before each day.
+    Days where no account has any snapshot yet are excluded (HAVING).
+    """
+    import calendar as cal_mod
+    from datetime import timedelta
+
+    first = date(year, month, 1)
+    last_day_num = cal_mod.monthrange(year, month)[1]
+    last = date(year, month, last_day_num)
+
+    # Extend start back 31 days so day 1 can carry-forward from prior month
+    ctx_start = first - timedelta(days=31)
+
+    return db.query(
+        """
+        WITH day_balances AS (
+            SELECT d::date AS d, a.account_id, a.type, a.currency,
+                   (SELECT b.balance FROM balances b
+                    WHERE b.account_id = a.account_id AND b.snap_date <= d::date
+                    ORDER BY b.snap_date DESC, b.id DESC
+                    LIMIT 1) AS balance
+            FROM generate_series(%(ctx_start)s::date, %(end)s::date, '1 day'::interval) AS d
+            CROSS JOIN accounts a
+            WHERE a.active
+        )
+        SELECT d AS snap_date,
+               COALESCE(SUM(CASE WHEN currency = 'SGD' AND balance IS NOT NULL
+                    THEN CASE WHEN type = 'asset' THEN balance ELSE -balance END END), 0) AS net_sgd,
+               COALESCE(SUM(CASE WHEN currency = 'MYR' AND balance IS NOT NULL
+                    THEN CASE WHEN type = 'asset' THEN balance ELSE -balance END END), 0) AS net_myr
+        FROM day_balances
+        GROUP BY d
+        HAVING COUNT(balance) > 0
+        ORDER BY d ASC
+        """,
+        {"ctx_start": ctx_start, "end": last},
+    )
+
+
 # ── recurring / rollover (jobs) ─────────────────────────────────────────────
 
 def active_recurring(today: date) -> list[dict]:
