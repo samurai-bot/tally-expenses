@@ -27,6 +27,7 @@ INSERT INTO categories (name, is_discretionary, sort_order) VALUES
  ('Food',true,8),
  ('Family',false,9),
  ('Other',true,10),
+ ('Wellness',true,13),
  ('Transfer',false,12)
 ON CONFLICT (name) DO NOTHING;
 

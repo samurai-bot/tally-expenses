@@ -256,10 +256,11 @@ def _txn_balance_delta(flow: str, account_type: str, amount: Decimal) -> Decimal
         return amount if flow == "expense" else -amount
 
 
-def _reflect_balance(account_id: str, flow: str, amount, sign: int) -> None:
+def _reflect_balance(account_id: str, flow: str, amount, currency: str, sign: int) -> None:
     """Adjust the latest balance for ``account_id`` by the effect of a
     transaction (``sign`` +1 for insert, -1 for delete). Always computes
-    from the most recent snapshot, whether manual or auto."""
+    from the most recent snapshot, whether manual or auto.
+    Converts ``amount`` from ``currency`` to the account's currency if they differ."""
     account_type = _get_account_type(account_id)
     if account_type is None:
         return
@@ -271,17 +272,34 @@ def _reflect_balance(account_id: str, flow: str, amount, sign: int) -> None:
     if latest is None:
         return  # no baseline to adjust from
 
-    delta = _txn_balance_delta(flow, account_type, d2(amount))
-    new_balance = (d2(latest["balance"]) + delta * sign).quantize(TWO)
-
     acct = db.query_one(
         "SELECT currency FROM accounts WHERE account_id = %(id)s", {"id": account_id}
     )
     if acct is None:
         return
 
+    # Convert to account currency if txn currency differs
+    acct_currency = acct["currency"]
+    if currency != acct_currency:
+        rates = get_fx_rates()
+        to_sgd = rates.get(currency)
+        if to_sgd is None:
+            return  # unknown currency — can't convert
+        amount_sgd = d2(amount) * to_sgd
+        if acct_currency == "SGD":
+            amount = amount_sgd
+        else:
+            # Cross-rate: via SGD
+            to_acct = rates.get(acct_currency)
+            if to_acct is None:
+                return
+            amount = amount_sgd / to_acct
+
+    delta = _txn_balance_delta(flow, account_type, d2(amount))
+    new_balance = (d2(latest["balance"]) + delta * sign).quantize(TWO)
+
     upsert_balance(
-        _today(), account_id, new_balance, acct["currency"],
+        _today(), account_id, new_balance, acct_currency,
         note="auto: transaction", source="auto",
     )
 
@@ -323,7 +341,7 @@ def insert_transaction(
         },
     )
     if rowcount:
-        _reflect_balance(account_id, flow, amount, sign=1)
+        _reflect_balance(account_id, flow, amount, currency, sign=1)
     return rowcount
 
 
@@ -345,7 +363,7 @@ def delete_transaction(txn_id: str) -> int:
     """Hard-delete a transaction and reverse its effect on the latest balance
     snapshot. Returns rowcount (0 if not found)."""
     txn = db.query_one(
-        "SELECT account_id, flow, amount FROM transactions WHERE txn_id = %(id)s",
+        "SELECT account_id, flow, amount, currency FROM transactions WHERE txn_id = %(id)s",
         {"id": txn_id},
     )
     if txn is None:
@@ -354,7 +372,7 @@ def delete_transaction(txn_id: str) -> int:
         "DELETE FROM transactions WHERE txn_id = %(id)s", {"id": txn_id}
     )
     if rowcount:
-        _reflect_balance(txn["account_id"], txn["flow"], txn["amount"], sign=-1)
+        _reflect_balance(txn["account_id"], txn["flow"], txn["amount"], txn["currency"], sign=-1)
     return rowcount
 
 
