@@ -173,7 +173,6 @@ def upsert_fx_rates(rates: dict[str, Decimal], source: str) -> int:
             DO UPDATE SET to_sgd = EXCLUDED.to_sgd,
                           source = EXCLUDED.source,
                           updated_at = now()
-            WHERE fx_rates.source = EXCLUDED.source
             """,
             {"c": code, "r": rate, "s": source},
         )
