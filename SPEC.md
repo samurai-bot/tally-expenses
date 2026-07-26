@@ -170,7 +170,7 @@ discretionary), Total / Days elapsed / Avg daily burn / Projected month. Links t
 - **Regex fallback** (use when LLM errors or returns junk): number → amount; keyword maps for
   category (`rice|food|kopi|...`→Food, `grab|gojek|tada|taxi|mrt|bus|ezlink|fuel|parking`→Transport
   [after food check], `netflix|icloud|...`→Subscriptions) and account (`dbs cc`→DBS_CC, `mbb cc`→MBB_CC,
-  `isaavy`→MBB_ISAAVY, `dbs`→DBS, `ocbc`→OCBC, `paylah`→PAYLAH, `wise`→WISE, `tngo`→TNGO,
+  `isaavy`→MBB_ISAAVY, `dbs`→DBS, `ocbc`→OCBC, `paylah`→DBS, `wise`→WISE, `tngo`→TNGO,
   `tunai`→TUNAI, `maybank|myr`→MBB_MYR, else CASH_SGD). Currency derived from the account.
 
 ## 9. Config / env (`.env`)

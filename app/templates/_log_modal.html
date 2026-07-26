@@ -78,7 +78,7 @@
     else if (/(grab|gojek|tada|taxi|mrt|bus|ezlink|fuel|petrol|parking|toll|transport)/.test(text)) category = 'Transport';
     else if (/(netflix|icloud|spotify|youtube|claude|subscription)/.test(text)) category = 'Subscriptions';
     let account = 'CASH_SGD';
-    const map = [['dbs cc','DBS_CC'],['mbb cc','MBB_CC'],['isaavy','MBB_ISAAVY'],['dbs','DBS'],['ocbc','OCBC'],['paylah','PAYLAH'],['wise','WISE'],['tngo','TNGO'],['tunai','TUNAI'],['maybank','MBB_MYR'],['myr','MBB_MYR']];
+    const map = [['dbs cc','DBS_CC'],['mbb cc','MBB_CC'],['isaavy','MBB_ISAAVY'],['dbs','DBS'],['ocbc','OCBC'],['paylah','DBS'],['wise','WISE'],['tngo','TNGO'],['tunai','TUNAI'],['maybank','MBB_MYR'],['myr','MBB_MYR']];
     for (const [kw, acc] of map) { if (text.includes(kw)) { account = acc; break; } }
     let flow = /(salary|received|refund|cashback|dividend|reimburse)/.test(text) ? 'income' : 'expense';
     return { amount, category, account, note: text, currency: currencyForAccount(account), flow: flow };

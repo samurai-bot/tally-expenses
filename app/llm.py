@@ -32,7 +32,7 @@ CATEGORIES = [
     "Subscriptions", "Tax", "Food", "Family", "Shopping", "Other",
 ]
 ACCOUNTS = [
-    "DBS", "OCBC", "MBB_ISAAVY", "WISE", "PAYLAH", "CASH_SGD",
+    "DBS", "OCBC", "MBB_ISAAVY", "WISE", "CASH_SGD",
     "DBS_CC", "MBB_CC", "MBB_MYR", "TUNAI", "TNGO",
 ]
 MYR_ACCOUNTS = {"MBB_MYR", "TUNAI", "TNGO"}
@@ -50,6 +50,8 @@ SYSTEM_PROMPT = (
     "Rule: shopee/lazada/amazon/buy/bought/ntuc/fairprice/groceries/"
     "daiso/muji/ikea/dept store/mall => Shopping (discretionary). "
     "Default account is CASH_SGD. "
+    "Rule: PayLah, paylah, or any PayLah mention => DBS account (DBS Bank / Paylah). "
+    "Rule: Wise => WISE card. " 
     "Currency: use the one named in the text (e.g. usd, rm/ringgit, yen, baht, "
     "euro); default SGD if none is mentioned. "
     "Flow: default is \"expense\". Use \"income\" for salary, received money, "
@@ -108,7 +110,7 @@ _ACCOUNT_KW = [
     (re.compile(r"\bisaavy\b", re.I), "MBB_ISAAVY"),
     (re.compile(r"\bdbs\b", re.I), "DBS"),
     (re.compile(r"\bocbc\b", re.I), "OCBC"),
-    (re.compile(r"\bpaylah\b", re.I), "PAYLAH"),
+    (re.compile(r"\bpaylah\b", re.I), "DBS"),
     (re.compile(r"\bwise\b", re.I), "WISE"),
     (re.compile(r"\btngo\b", re.I), "TNGO"),
     (re.compile(r"\btunai\b", re.I), "TUNAI"),
