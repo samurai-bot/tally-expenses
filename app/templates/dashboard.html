@@ -49,9 +49,9 @@
       <div class="cr-row">
         <span class="cr-rank">{{ loop.index }}</span>
         <span class="cr-name">{{ c.category }}{% if c.is_discretionary %}<span class="tag disc">disc</span>{% endif %}</span>
-        <span class="cr-bar-wrap"><span class="cr-bar {% if c.is_discretionary %}cr-disc{% else %}cr-fixed{% endif %}" style="width:{{ (c.sgd / max_sgd * 100) | round(1) }}%"></span></span>
+        <span class="cr-bar-wrap"><span class="cr-bar {% if c.is_discretionary %}cr-disc{% else %}cr-fixed{% endif %}" style="width:{{ (c.sgd|float / max_sgd * 100) | round(1) }}%"></span></span>
         <span class="cr-val">{{ c.sgd | money }}</span>
-        <span class="cr-pct">{{ (c.sgd / m.total_expenses_sgd * 100) | round(1) }}%</span>
+        <span class="cr-pct">{{ (c.sgd|float / m.total_expenses_sgd|float * 100) | round(1) }}%</span>
       </div>
       {% else %}
       <p class="muted" style="padding:12px 0">No expenses this month yet.</p>

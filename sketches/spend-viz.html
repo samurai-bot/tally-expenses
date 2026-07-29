@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spend Viz Alternatives</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #0b1220; color: #eef2f8; padding: 24px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #93a0b8; text-transform: uppercase; letter-spacing: 0.5px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .card { background: #141d2e; border: 1px solid #28344f; border-radius: 10px; padding: 20px; }
+  .total-line { display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px solid #28344f; margin-top: 8px; font-weight: 600; }
+
+  /* ---- Variant 1: Horizontal Bars ---- */
+  .hbar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 13px; }
+  .hbar-label { width: 105px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hbar-track { flex: 1; height: 20px; background: #1a2540; border-radius: 4px; overflow: hidden; position: relative; }
+  .hbar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+  .hbar-fill.disc { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+  .hbar-fill.nondisc { background: linear-gradient(90deg, #475569, #64748b); }
+  .hbar-val { width: 72px; text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; }
+
+  /* ---- Variant 2: Treemap ---- */
+  .treemap { display: flex; flex-wrap: wrap; gap: 3px; height: 320px; }
+  .tm-cell { display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 4px; font-size: 11px; line-height: 1.3; padding: 6px; overflow: hidden; cursor: default; }
+  .tm-cell.disc { background: #1d4ed8; }
+  .tm-cell.nondisc { background: #334155; }
+
+  /* ---- Variant 3: Ranked list with inline bars ---- */
+  .rank-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #1a2540; }
+  .rank-num { width: 20px; text-align: center; font-size: 12px; color: #64748b; font-weight: 600; }
+  .rank-name { width: 100px; font-size: 13px; }
+  .rank-bar-wrap { flex: 1; height: 6px; background: #1a2540; border-radius: 3px; overflow: hidden; }
+  .rank-bar-fill { height: 100%; border-radius: 3px; }
+  .rank-bar-fill.disc { background: #3b82f6; }
+  .rank-bar-fill.nondisc { background: #64748b; }
+  .rank-val { width: 80px; text-align: right; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .rank-pct { width: 45px; text-align: right; font-size: 11px; color: #64748b; }
+
+  .legend { display: flex; gap: 16px; margin-bottom: 10px; font-size: 11px; color: #93a0b8; }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+  .legend-dot.disc { background: #3b82f6; }
+  .legend-dot.nondisc { background: #64748b; }
+</style>
+</head>
+<body>
+
+<div class="grid">
+
+  <!-- Variant 1: Horizontal Bars -->
+  <div class="card">
+    <h2>A — Horizontal Bars</h2>
+    <div class="legend">
+      <span><span class="legend-dot disc"></span> Discretionary</span>
+      <span><span class="legend-dot nondisc"></span> Fixed</span>
+    </div>
+    <div id="bars"></div>
+    <div class="total-line"><span>Total</span><span>S$16,850</span></div>
+  </div>
+
+  <!-- Variant 2: Treemap -->
+  <div class="card">
+    <h2>B — Treemap</h2>
+    <div class="legend">
+      <span><span class="legend-dot disc"></span> Discretionary</span>
+      <span><span class="legend-dot nondisc"></span> Fixed</span>
+    </div>
+    <div class="treemap" id="treemap"></div>
+    <div class="total-line"><span>Total</span><span>S$16,850</span></div>
+  </div>
+
+  <!-- Variant 3: Ranked List -->
+  <div class="card">
+    <h2>C — Ranked List</h2>
+    <div class="legend">
+      <span><span class="legend-dot disc"></span> Discretionary</span>
+      <span><span class="legend-dot nondisc"></span> Fixed</span>
+    </div>
+    <div id="ranked"></div>
+    <div class="total-line"><span>Total</span><span>S$16,850</span></div>
+  </div>
+
+</div>
+
+<script>
+const data = [
+  {cat:"Allowance", amt:4000.00, disc:false},
+  {cat:"Housing", amt:2815.18, disc:false},
+  {cat:"Tax", amt:2277.57, disc:false},
+  {cat:"Other", amt:1943.49, disc:true},
+  {cat:"Wellness", amt:1503.00, disc:true},
+  {cat:"Family", amt:1480.24, disc:false},
+  {cat:"Insurance", amt:822.06, disc:false},
+  {cat:"Food", amt:752.02, disc:true},
+  {cat:"Transport", amt:549.35, disc:true},
+  {cat:"Shopping", amt:370.54, disc:true},
+  {cat:"Subscriptions", amt:231.50, disc:false},
+  {cat:"Telco", amt:105.28, disc:false}
+];
+const total = data.reduce((s,d) => s + d.amt, 0);
+const max = data[0].amt;
+
+// --- Variant A: Horizontal Bars ---
+const bars = document.getElementById('bars');
+data.forEach(d => {
+  const cls = d.disc ? 'disc' : 'nondisc';
+  bars.innerHTML += `
+    <div class="hbar-row">
+      <div class="hbar-label">${d.cat}</div>
+      <div class="hbar-track"><div class="hbar-fill ${cls}" style="width:${(d.amt/max*100).toFixed(1)}%"></div></div>
+      <div class="hbar-val">$${d.amt.toLocaleString('en',{minimumFractionDigits:2})}</div>
+    </div>`;
+});
+
+// --- Variant B: Treemap (squarified-ish, laid out by rows) ---
+const tm = document.getElementById('treemap');
+// Calculate area proportional to spend
+const tmArea = 320 * 200; // approximate pixel area
+const sorted = [...data].sort((a,b) => b.amt - a.amt);
+sorted.forEach(d => {
+  const pct = d.amt / total;
+  // Scale: width proportional to pct, height fixed-ish for readability
+  const w = Math.max(70, pct * 100 * 2.5);
+  const h = Math.max(36, pct * 100 * 1.2);
+  const cls = d.disc ? 'disc' : 'nondisc';
+  tm.innerHTML += `<div class="tm-cell ${cls}" style="width:${w.toFixed(0)}px;height:${h.toFixed(0)}px;flex-grow:${(pct*100).toFixed(0)}">
+    ${d.cat}<br>$${d.amt.toLocaleString('en',{minimumFractionDigits:0})}
+  </div>`;
+});
+
+// --- Variant C: Ranked List ---
+const ranked = document.getElementById('ranked');
+data.forEach((d, i) => {
+  const cls = d.disc ? 'disc' : 'nondisc';
+  const pct = (d.amt/total*100).toFixed(1);
+  ranked.innerHTML += `
+    <div class="rank-row">
+      <div class="rank-num">${i+1}</div>
+      <div class="rank-name">${d.cat}</div>
+      <div class="rank-bar-wrap"><div class="rank-bar-fill ${cls}" style="width:${(d.amt/max*100).toFixed(1)}%"></div></div>
+      <div class="rank-val">$${d.amt.toLocaleString('en',{minimumFractionDigits:2})}</div>
+      <div class="rank-pct">${pct}%</div>
+    </div>`;
+});
+</script>
+
+</body>
+</html>

@@ -251,10 +251,13 @@ def page_dashboard(request: Request, month: str = ""):
     # Show next month link only if not in the future
     show_next = date(next_year, next_month, 1) <= t.replace(day=1)
 
-    # 2) spend by category — ranked list (SGD-equivalent)
+    # 2) spend by category — ranked list (SGD-equivalent), sorted by amount desc
     cat_legend = []
-    visible = [c for c in m["spend_by_category"] if c["sgd_eq"] > 0]
-    max_sgd = max((c["sgd_eq"] for c in visible), default=0)
+    visible = sorted(
+        [c for c in m["spend_by_category"] if c["sgd_eq"] > 0],
+        key=lambda c: c["sgd_eq"], reverse=True,
+    )
+    max_sgd = float(visible[0]["sgd_eq"]) if visible else 0
     for i, c in enumerate(visible):
         color = charts.SERIES[i % len(charts.SERIES)]
         cat_legend.append({
