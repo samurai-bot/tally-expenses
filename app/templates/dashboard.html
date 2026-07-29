@@ -113,33 +113,6 @@
       </table>
     </div>
   </section>
-
-  <section>
-    <h2>Spend by category (MTD)</h2>
-    <div class="card">
-      <table>
-        <thead>
-          <tr><th>Category</th><th class="num">SGD‑eq</th></tr>
-        </thead>
-        <tbody>
-        {% for c in m.spend_by_category %}
-          <tr>
-            <td>
-              {{ c.category }}{% if c.is_discretionary %}<span class="tag disc">discretionary</span>{% endif %}
-              {% if c.multi_currency %}<br><small class="muted">{% for n in c.native %}{{ n.amount | money }} {{ n.currency }}{% if not loop.last %} · {% endif %}{% endfor %}</small>{% endif %}
-            </td>
-            <td class="num">{{ c.sgd_eq | money }}</td>
-          </tr>
-        {% else %}
-          <tr><td colspan="2" class="muted">No expenses this month yet.</td></tr>
-        {% endfor %}
-        </tbody>
-        <tfoot>
-          <tr><th>Total</th><th class="num">{{ m.total_expenses_sgd | money }}</th></tr>
-        </tfoot>
-      </table>
-    </div>
-  </section>
 </div>
 
 <div class="links">
