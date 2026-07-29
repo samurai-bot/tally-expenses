@@ -10,6 +10,7 @@ browser login cookie, and it doesn't touch the database directly.
 | Tool | Calls | Purpose |
 |---|---|---|
 | `get_dashboard` | `GET /api/dashboard` | Current-month snapshot (liquid cash, spend by category, burn, projection) |
+| `get_liquid_cash` | `GET /api/liquid-cash` | Combined SGD liquid cash for any date — month-on-month comparisons |
 | `list_reference` | `GET /api/reference` | Valid accounts, categories, currencies — read this before writing |
 | `get_fx_rates` | `GET /api/fx` | FX rates (`to_sgd`) + supported currencies |
 | `list_transactions` | `GET /api/transactions` | Transactions for any date range + `expense_total_sgd` (per-day/-week spend) |

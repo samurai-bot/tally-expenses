@@ -16,8 +16,10 @@ data to AI agents. Everything lives inside a private Tailscale tailnet — there
 no public exposure. The web app is intentionally small and dependency-light
 (server-rendered HTML, no JS framework, charts are hand-rolled SVG).
 
-The central design rule is **stocks vs flows** (see §4): balances and transactions
-are recorded independently and must never be derived from one another.
+The central design rule is **stocks vs flows** (see §4): balances capture
+what you have; transactions capture where money went. They stay in sync
+automatically — logging a transaction adjusts the latest balance, and deleting
+one reverses the adjustment. Manual balance snapshots still take precedence.
 
 ## 2. Components
 
@@ -58,11 +60,11 @@ are recorded independently and must never be derived from one another.
 | Module | Responsibility |
 |---|---|
 | `main.py` | FastAPI app: routes (pages + `/api/*`), auth middleware, lifespan (opens the pool, starts the scheduler), JSON serialization |
-| `auth.py` | Single-user login (HMAC-signed cookie) **and** the `API_KEY` bearer/`X-API-Key` gate for `/api/*` |
+| `auth.py` | Single-user login (HMAC-signed cookie) and API key gate (`Authorization: Bearer` / `X-API-Key`) for `/api/*` |
 | `db.py` | psycopg 3 `ConnectionPool` (sync) + `query`/`query_one`/`execute` helpers; DSN normalization |
 | `queries.py` | **All SQL** lives here (parameterized), plus dashboard metric computation |
 | `jobs.py` | Scheduled jobs: recurring poster, monthly rollover, weekly digest, FX update |
-| `fx.py` | Supported-currency list, live FX fetch, NL currency detection |
+| `fx.py` | Supported-currency list, live FX fetch via open.er-api.com, NL currency detection |
 | `llm.py` | NL → structured-expense parse via any OpenAI-compatible endpoint, with a regex fallback (never raises) |
 | `charts.py` | Dependency-free server-rendered SVG (line / donut / bar) |
 | `templates/`, `static/` | Jinja2 templates (pages + Balance/Log modals) and the dark-theme CSS |

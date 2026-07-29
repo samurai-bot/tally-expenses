@@ -105,6 +105,7 @@ auto-generated docs at `/docs` and the schema at `/openapi.json`.
 | Endpoint | Returns |
 |---|---|
 | `GET /api/dashboard` | All §4 metrics + latest balances + spend-by-category (month-to-date) |
+| `GET /api/liquid-cash` | Combined SGD liquid cash as of any date (`?date=YYYY-MM-DD`; omit for today). Carry-forward, current FX. |
 | `GET /api/reference` | **Live** `accounts`, `categories`, `currencies` — read before writing |
 | `GET /api/fx` | FX `rates` (`to_sgd`) + supported `currencies` |
 | `GET /api/transactions` | Filtered transaction list for **any date range** + `expense_total_sgd`. Use for per-day / per-week spend (dashboard is month-to-date only) |
@@ -176,6 +177,10 @@ both; `confirm=false` previews without writing.)
 **Answer "how am I doing this month?":** `GET /api/dashboard` → report
 `total_expenses_sgd`, `avg_daily_burn`, `projected_month`, and the top
 `spend_by_category` entries. All already SGD-equivalent.
+
+**Compare liquid cash month-on-month:** `GET /api/liquid-cash` (today) and
+`GET /api/liquid-cash?date=YYYY-MM-DD` (same day last month) → subtract
+`combined_sgd` values. Same carry-forward + FX convention as the dashboard.
 
 **Record account balances:** ask the user for current balances → `POST
 /api/balance {rows:[…]}`. One snapshot per account per day; re-sending updates.

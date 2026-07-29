@@ -40,7 +40,7 @@ createdb expenses
 # 2. Clone, configure, launch
 git clone https://github.com/chiam-ck/tally-expenses.git
 cd tally-expenses
-cp .env.example .env   # edit: DATABASE_URL, API_KEY, auth creds
+cp .env.example .env   # edit: DATABASE_URL, API_KEY, MCP_AUTH_TOKEN, auth creds
 docker compose up -d
 ```
 
@@ -63,11 +63,12 @@ All charts are dependency-free server-rendered SVG. Timezone: Asia/Singapore.
 | `DELETE /api/txn/{id}` | Undo a mistaken log |
 | `POST /api/balance` | Capture today's account balances |
 | `GET /api/dashboard` | All dashboard metrics as JSON |
+| `GET /api/liquid-cash` | Combined SGD liquid cash as of any date (carry-forward, current FX) |
 | `GET /api/reference` | Live accounts, categories, currencies (for agents) |
 | `GET /api/transactions` | Filtered list with `expense_total_sgd` |
 | `GET /api/fx` | Exchange rates (`to_sgd` per currency) |
 
-All `/api/*` routes accept `Authorization: Bearer <API_KEY>` for programmatic
+All `/api/*` routes accept `Authorization: Bearer ***` for programmatic
 access — no login cookie needed.
 
 ## Scheduled jobs
@@ -87,9 +88,9 @@ All idempotent. All fail-soft — a dead FX source keeps the last known rates.
 The `tally-mcp` sidecar exposes every API endpoint as MCP tools so your AI
 agent (Hermes, Claude, etc.) can read and write your finances:
 
-`get_dashboard` · `list_reference` · `list_transactions` · `get_fx_rates`
-`parse_expense` · `log_transaction` · `log_from_text` · `delete_transaction`
-`set_balance`
+`get_dashboard` · `get_liquid_cash` · `list_reference` · `list_transactions`
+`get_fx_rates` · `parse_expense` · `log_transaction` · `log_from_text`
+`delete_transaction` · `set_balance`
 
 Agents authenticate with `MCP_AUTH_TOKEN`; the sidecar holds the API key
 internally. Two distinct secrets, no key leakage.

@@ -1,5 +1,11 @@
 # Expenses Tracker — Build Spec (for Claude Code)
 
+> **Historical document.** This is the original v1.0 build plan. The app has since
+> evolved: login gate was added, FX moved to a multi-currency `fx_rates` table,
+> transfers with double-entry were introduced, PAYLAH was consolidated into DBS,
+> and the MCP sidecar + `/api/liquid-cash` endpoint were added. For the current
+> state see [`ARCHITECTURE.md`](ARCHITECTURE.md) and [`SEMANTIC_LAYER.md`](SEMANTIC_LAYER.md).
+
 A self-hosted personal expenses tracker. Replaces a Google Sheet + n8n webhooks with one
 private FastAPI service. The **app runs on `app-host`**; **Postgres runs on `db-host`** and is
 reached across the tailnet. Reachable only over Tailscale.
