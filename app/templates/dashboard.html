@@ -40,23 +40,22 @@
   <div class="hero-chart">{{ nw_svg | safe }}</div>
 </section>
 
-<!-- donut (spend by category) + stat tiles -->
+<!-- ranked category spend list (replaces donut) -->
 <div class="dash-row">
-  <section class="card donut-card">
+  <section class="card cat-rank-card">
     <h3 class="card-title">Spend by category · MTD</h3>
-    <div class="donut-wrap">
-      <div class="donut-svg">{{ donut_svg | safe }}</div>
-      <ul class="legend">
-        {% for c in cat_legend %}
-        <li>
-          <span class="dot" style="background:{{ c.color }}"></span>
-          <span class="legend-name">{{ c.category }}{% if c.is_discretionary %}<span class="tag disc">disc</span>{% endif %}</span>
-          <b class="legend-val">{{ c.sgd | money }}</b>
-        </li>
-        {% else %}
-        <li class="muted">No expenses this month yet.</li>
-        {% endfor %}
-      </ul>
+    <div class="cat-rank-list">
+      {% for c in cat_legend %}
+      <div class="cr-row">
+        <span class="cr-rank">{{ loop.index }}</span>
+        <span class="cr-name">{{ c.category }}{% if c.is_discretionary %}<span class="tag disc">disc</span>{% endif %}</span>
+        <span class="cr-bar-wrap"><span class="cr-bar {% if c.is_discretionary %}cr-disc{% else %}cr-fixed{% endif %}" style="width:{{ (c.sgd / max_sgd * 100) | round(1) }}%"></span></span>
+        <span class="cr-val">{{ c.sgd | money }}</span>
+        <span class="cr-pct">{{ (c.sgd / m.total_expenses_sgd * 100) | round(1) }}%</span>
+      </div>
+      {% else %}
+      <p class="muted" style="padding:12px 0">No expenses this month yet.</p>
+      {% endfor %}
     </div>
     {% if fx_updated %}<p class="note" style="margin-top:auto; padding-top:10px">Amounts shown SGD‑equivalent · FX updated {{ fx_updated.strftime('%-d %b, %H:%M') }} (open.er-api.com)</p>{% endif %}
   </section>

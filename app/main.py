@@ -251,19 +251,16 @@ def page_dashboard(request: Request, month: str = ""):
     # Show next month link only if not in the future
     show_next = date(next_year, next_month, 1) <= t.replace(day=1)
 
-    # 2) spend by category (donut + legend), SGD-equivalent
-    cat_segs, cat_legend = [], []
+    # 2) spend by category — ranked list (SGD-equivalent)
+    cat_legend = []
     visible = [c for c in m["spend_by_category"] if c["sgd_eq"] > 0]
+    max_sgd = max((c["sgd_eq"] for c in visible), default=0)
     for i, c in enumerate(visible):
         color = charts.SERIES[i % len(charts.SERIES)]
-        cat_segs.append({"value": float(c["sgd_eq"]), "color": color})
         cat_legend.append({
             "category": c["category"], "sgd": c["sgd_eq"],
             "color": color, "is_discretionary": c["is_discretionary"],
         })
-    donut_svg = charts.donut_chart(
-        cat_segs, center_label=charts._money(m["total_expenses_sgd"]), center_sub="MTD SGD",
-    )
 
     # 3) daily discretionary spend trend (bars, day 1..elapsed)
     ds = queries.daily_spend(t.replace(day=1), t, discretionary_only=True)
@@ -286,8 +283,8 @@ def page_dashboard(request: Request, month: str = ""):
     fx_updated = max((r["updated_at"] for r in fx_detail), default=None)
     return templates.TemplateResponse(
         "dashboard.html",
-        base_ctx(request, m=m, nw_svg=nw_svg, donut_svg=donut_svg,
-                 bars_svg=bars_svg, cat_legend=cat_legend, fx_updated=fx_updated,
+        base_ctx(request, m=m, nw_svg=nw_svg,
+                 bars_svg=bars_svg, cat_legend=cat_legend, max_sgd=max_sgd, fx_updated=fx_updated,
                  cur_month=cur_month_label, prev_month_str=prev_month_str,
                  next_month_str=next_month_str, show_next=show_next),
     )
