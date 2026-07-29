@@ -257,12 +257,16 @@ def page_dashboard(request: Request, month: str = ""):
         [c for c in m["spend_by_category"] if c["sgd_eq"] > 0],
         key=lambda c: c["sgd_eq"], reverse=True,
     )
+    total_sgd = float(m["total_expenses_sgd"])
     max_sgd = float(visible[0]["sgd_eq"]) if visible else 0
     for i, c in enumerate(visible):
         color = charts.SERIES[i % len(charts.SERIES)]
+        sgd = float(c["sgd_eq"])
         cat_legend.append({
             "category": c["category"], "sgd": c["sgd_eq"],
             "color": color, "is_discretionary": c["is_discretionary"],
+            "bar_pct": round(sgd / max_sgd * 100, 1) if max_sgd else 0,
+            "pct": round(sgd / total_sgd * 100, 1) if total_sgd else 0,
         })
 
     # 3) daily discretionary spend trend (bars, day 1..elapsed)
@@ -287,7 +291,7 @@ def page_dashboard(request: Request, month: str = ""):
     return templates.TemplateResponse(
         "dashboard.html",
         base_ctx(request, m=m, nw_svg=nw_svg,
-                 bars_svg=bars_svg, cat_legend=cat_legend, max_sgd=max_sgd, fx_updated=fx_updated,
+                 bars_svg=bars_svg, cat_legend=cat_legend, fx_updated=fx_updated,
                  cur_month=cur_month_label, prev_month_str=prev_month_str,
                  next_month_str=next_month_str, show_next=show_next),
     )
