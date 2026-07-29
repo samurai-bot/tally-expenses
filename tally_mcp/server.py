@@ -90,6 +90,19 @@ def get_dashboard() -> dict:
 
 
 @mcp.tool()
+def get_liquid_cash(date: str | None = None) -> dict:
+    """Combined SGD liquid cash as of a specific date (YYYY-MM-DD). Uses
+    carry-forward: the most recent balance snapshot per account on or before
+    that date. Current FX rates. Returns {snap_date, net_sgd, net_myr,
+    combined_sgd}. Omit date for today. Use this for month-on-month comparisons
+    (e.g. 'compare liquid cash today vs same day last month')."""
+    params = {}
+    if date:
+        params["date"] = date
+    return _request("GET", "/api/liquid-cash", params=params)
+
+
+@mcp.tool()
 def list_reference() -> dict:
     """Valid values for building a transaction or balance: the live `accounts`
     list (account_id, name, currency, asset/liability type, active), the

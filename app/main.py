@@ -658,6 +658,30 @@ def api_dashboard():
     return JSONResponse(_jsonable(queries.dashboard(today())))
 
 
+@app.get("/api/liquid-cash")
+def api_liquid_cash(date: str = ""):
+    """Combined SGD liquid cash as of a specific date (YYYY-MM-DD).
+    Carry-forward: uses the most recent balance snapshot per account on or
+    before the requested date. Uses current FX rates. Returns {snap_date,
+    net_sgd, net_myr, combined_sgd} or 404 if no balances exist for that date.
+    Omit `date` to get today's snapshot."""
+    from datetime import date as _date, datetime as _dt
+
+    if date:
+        try:
+            target = _dt.strptime(date.strip(), "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD")
+    else:
+        target = today()
+
+    result = queries.liquid_cash_on_date(target)
+    if result is None:
+        raise HTTPException(status_code=404,
+                            detail=f"no balance data for {target.isoformat()}")
+    return JSONResponse(_jsonable(result))
+
+
 @app.get("/api/fx")
 def api_fx():
     return JSONResponse(_jsonable({

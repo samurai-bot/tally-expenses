@@ -644,6 +644,45 @@ def filtered_expense_total_sgd(f: dict) -> Decimal:
     return d2(row["total"]) if row else Decimal("0.00")
 
 
+def liquid_cash_on_date(target_date: date) -> dict | None:
+    """Combined SGD liquid cash as of a specific date (carry-forward per account).
+    Returns {snap_date, net_sgd, net_myr, combined_sgd} or None if no balances exist.
+    Uses the latest FX rate (same convention as the dashboard chart)."""
+    row = db.query_one(
+        """
+        WITH asof AS (
+            SELECT a.account_id, a.type, a.currency,
+                   (SELECT b.balance FROM balances b
+                    WHERE b.account_id = a.account_id AND b.snap_date <= %(d)s
+                    ORDER BY b.snap_date DESC, b.id DESC
+                    LIMIT 1) AS balance
+            FROM accounts a
+            WHERE a.active
+        )
+        SELECT
+            COALESCE(SUM(CASE WHEN currency = 'SGD'
+                 THEN CASE WHEN type = 'asset' THEN balance ELSE -balance END END), 0) AS net_sgd,
+            COALESCE(SUM(CASE WHEN currency = 'MYR'
+                 THEN CASE WHEN type = 'asset' THEN balance ELSE -balance END END), 0) AS net_myr
+        FROM asof
+        WHERE balance IS NOT NULL
+        """,
+        {"d": target_date},
+    )
+    if row is None or (row["net_sgd"] == 0 and row["net_myr"] == 0):
+        return None
+    net_sgd = d2(row["net_sgd"])
+    net_myr = d2(row["net_myr"])
+    rate = get_fx_rates().get("MYR", Decimal("0.30"))
+    combined = (net_sgd + net_myr * rate).quantize(TWO)
+    return {
+        "snap_date": target_date.isoformat(),
+        "net_sgd": net_sgd,
+        "net_myr": net_myr,
+        "combined_sgd": combined,
+    }
+
+
 def balance_history() -> list[dict]:
     """Liquid cash as of each snapshot date (carry-forward latest balance per
     account on or before that date), so a day with a partial capture still
