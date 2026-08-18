@@ -161,11 +161,11 @@ discretionary), Total / Days elapsed / Avg daily burn / Projected month. Links t
   parse (never 5xx).
 - `GET /api/dashboard` → JSON of all dashboard metrics (handy for future widgets).
 
-## 8. LLM parse (LiteLLM, OpenAI-compatible)
+## 8. LLM parse (OpenAI-compatible, OpenRouter)
 
-- Endpoint: `LITELLM_URL` (default `http://litellm-host:4000/v1/chat/completions`),
-  `Authorization: Bearer {LITELLM_KEY}`, model `LITELLM_MODEL`
-  (current choice: `openrouter/google/gemma-4-26b-a4b-it`).
+- Endpoint: `LLM_URL` (default `http://localhost:8000/v1/chat/completions`),
+  `Authorization: Bearer ${LLM_KEY}`, model `LLM_MODEL`
+  (current choice: `google/gemma-4-26b-a4b-it`).
 - Request: `temperature:0`, `response_format:{type:"json_object"}`, system + user messages.
 - System prompt: extract one transaction (expense or income) → JSON `{amount(number), category(one of the
   categories), account(one of the account_ids), flow("expense"|"income"|"transfer"), note(short)}`. Rules:
@@ -185,9 +185,9 @@ discretionary), Total / Days elapsed / Avg daily burn / Projected month. Links t
 # Postgres lives on db-host; reach it over the tailnet (NOT localhost)
 DATABASE_URL=postgresql://user:pass@db-host.<tailnet>.ts.net:5432/expenses
 TZ=Asia/Singapore
-LITELLM_URL=http://litellm-host:4000/v1/chat/completions
-LITELLM_KEY=sk-...
-LITELLM_MODEL=openrouter/google/gemma-4-26b-a4b-it
+LLM_URL=https://openrouter.ai/api/v1/chat/completions
+LLM_KEY=sk-...
+LLM_MODEL=google/gemma-4-26b-a4b-it
 # Weekly digest email via Resend (skip the job if RESEND_API_KEY unset)
 RESEND_API_KEY=re_...
 DIGEST_FROM=expenses@your-verified-domain.com   # Resend-verified domain
@@ -237,7 +237,7 @@ the tailscale interface, and a `pg_hba.conf` line permitting app-host's tailnet 
 - No public exposure (Serve, not Funnel). No auth screen by request — tailnet is the boundary.
 - Parameterize ALL SQL (psycopg placeholders) — no string interpolation into queries.
 - Validate `account_id` and `category` against the DB on writes; reject unknown values.
-- Keep `LITELLM_KEY` in env only.
+- Keep `LLM_KEY` in env only.
 
 ## 13. Acceptance criteria
 

@@ -1,8 +1,8 @@
 """Natural-language expense parsing via any OpenAI-compatible chat-completions API.
 
 Works with any provider exposing ``POST /v1/chat/completions`` (OpenAI, OpenRouter,
-Groq, Together, a LiteLLM proxy, Ollama, vLLM, …) — configured via ``LITELLM_URL`` /
-``LITELLM_KEY`` / ``LITELLM_MODEL`` (names are historical, not provider-specific).
+Groq, Together, Ollama, vLLM, …) — configured via ``LLM_URL`` / ``LLM_KEY`` /
+``LLM_MODEL``.
 
 ``parse()`` never raises — on any LLM error or junk output it returns the
 regex-based parse so ``/log`` keeps working with the model endpoint down.
@@ -20,11 +20,11 @@ from . import fx
 
 log = logging.getLogger("expenses.llm")
 
-LITELLM_URL = os.environ.get(
-    "LITELLM_URL", "http://localhost:4000/v1/chat/completions"
+LLM_URL = os.environ.get(
+    "LLM_URL", "http://localhost:8000/v1/chat/completions"
 )
-LITELLM_KEY = os.environ.get("LITELLM_KEY", "")
-LITELLM_MODEL = os.environ.get("LITELLM_MODEL", "openrouter/google/gemma-4-26b-a4b-it")
+LLM_KEY = os.environ.get("LLM_KEY", "")
+LLM_MODEL = os.environ.get("LLM_MODEL", "google/gemma-4-26b-a4b-it")
 
 # Valid sets are validated again at the DB layer; these are parse-time defaults.
 CATEGORIES = [
@@ -243,11 +243,11 @@ def _coerce(obj: dict, text: str) -> dict:
 
 def parse(text: str) -> dict:
     """Parse NL text into an expense dict. Never raises."""
-    if not LITELLM_KEY:
+    if not LLM_KEY:
         return regex_parse(text)
 
     payload = {
-        "model": LITELLM_MODEL,
+        "model": LLM_MODEL,
         "temperature": 0,
         "response_format": {"type": "json_object"},
         "messages": [
@@ -255,10 +255,10 @@ def parse(text: str) -> dict:
             {"role": "user", "content": text},
         ],
     }
-    headers = {"Authorization": f"Bearer {LITELLM_KEY}"}
+    headers = {"Authorization": f"Bearer {LLM_KEY}"}
 
     try:
-        resp = httpx.post(LITELLM_URL, json=payload, headers=headers, timeout=8.0)
+        resp = httpx.post(LLM_URL, json=payload, headers=headers, timeout=8.0)
         resp.raise_for_status()
         content = resp.json()["choices"][0]["message"]["content"]
         obj = _extract_json(content)
