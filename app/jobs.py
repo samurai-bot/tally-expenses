@@ -85,15 +85,24 @@ def next_due(r: dict, today: date) -> date | None:
     return cand
 
 
-# ── recurring poster (daily 00:10) ──────────────────────────────────────────
+# ── recurring poster (daily 05:00) ──────────────────────────────────────────
 
 def recurring_poster() -> dict:
-    """Post any recurring template due today. Idempotent via partial unique index."""
+    """Post Tally-managed recurring templates due today.
+
+    ``external_pipeline`` rows are deliberately absent from
+    ``queries.active_recurring``. They remain available to dashboard projection
+    queries, while the email expense pipeline owns the actual ledger entry.
+    """
     today = _today()
     posted = 0
     skipped = 0
 
     for r in queries.active_recurring(today):
+        # Keep this guard even though the query filters these rows. It makes the
+        # ownership rule explicit and protects against stale callers/mocks.
+        if r.get("external_pipeline"):
+            continue
         if not is_due(r, today):
             continue
         txn_id = f"T{today.strftime('%Y%m%d')}-{r['recur_id']}"

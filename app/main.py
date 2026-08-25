@@ -59,7 +59,7 @@ async def lifespan(app: FastAPI):
         jobs.register_jobs(scheduler)
         # Refresh FX once shortly after boot (background thread; never blocks startup).
         scheduler.add_job(jobs.fx_update, "date", run_date=_dt.now(SGT), id="fx_boot")
-        # Catch-up recurring poster at boot — if the app restarted after 00:10,
+        # Catch-up recurring poster at boot — if the app restarted after 05:00,
         # the day's trigger was lost. Idempotent via partial unique index.
         scheduler.add_job(jobs.recurring_poster, "date", run_date=_dt.now(SGT), id="recurring_boot")
         scheduler.start()
@@ -593,6 +593,7 @@ def _parse_recurring_form(form) -> dict:
         "start_date": start_date,
         "end_date": (form.get("end_date") or "").strip() or None,
         "note": (form.get("note") or "").strip(),
+        "external_pipeline": bool(form.get("external_pipeline")),
     }
 
 

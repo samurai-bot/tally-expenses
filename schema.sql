@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS recurring (
   active       boolean NOT NULL DEFAULT true,
   start_date   date,
   end_date     date,
-  note         text DEFAULT ''
+  note         text DEFAULT '',
+  external_pipeline boolean NOT NULL DEFAULT false
 );
 
 -- FLOWS: categorized money movements (append-only ledger)

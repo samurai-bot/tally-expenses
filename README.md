@@ -75,7 +75,7 @@ access — no login cookie needed.
 
 | Job | When | Does |
 |---|---|---|
-| Recurring poster | Daily 00:10 | Posts due subscriptions/bills to transactions |
+| Recurring poster | Daily 05:00 | Posts due subscriptions/bills to transactions; skips recurring items marked for the email pipeline |
 |                  |             | Optionally notifies via Discord webhook (`DISCORD_RECURRING_WEBHOOK`) |
 | Monthly rollover | 1st, 00:05 | Carries latest balances forward to the new month |
 | FX update | Daily 00:20 | Fetches live rates from open.er-api.com |

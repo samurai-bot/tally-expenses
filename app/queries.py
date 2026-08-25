@@ -791,9 +791,11 @@ def active_recurring(today: date) -> list[dict]:
     return db.query(
         """
         SELECT recur_id, name, account_id, flow, category, amount, currency,
-               day_of_month, frequency, month_of_year, start_date, end_date
+               day_of_month, frequency, month_of_year, start_date, end_date,
+               external_pipeline
         FROM recurring
         WHERE active
+          AND NOT external_pipeline
           AND (start_date IS NULL OR start_date <= %(today)s)
           AND (end_date   IS NULL OR end_date   >= %(today)s)
         ORDER BY recur_id
@@ -805,14 +807,17 @@ def active_recurring(today: date) -> list[dict]:
 # ── recurring management (CRUD) ─────────────────────────────────────────────
 
 def ensure_recurring_schema() -> None:
-    """Additively extend `recurring` with frequency + month_of_year (keeps
-    schema.sql untouched). Existing rows default to monthly."""
+    """Add recurring scheduling fields without requiring a migration tool."""
     db.execute(
         "ALTER TABLE recurring ADD COLUMN IF NOT EXISTS "
         "frequency text NOT NULL DEFAULT 'monthly'"
     )
     db.execute(
         "ALTER TABLE recurring ADD COLUMN IF NOT EXISTS month_of_year int"
+    )
+    db.execute(
+        "ALTER TABLE recurring ADD COLUMN IF NOT EXISTS "
+        "external_pipeline boolean NOT NULL DEFAULT false"
     )
 
 
@@ -821,7 +826,7 @@ def list_recurring() -> list[dict]:
         """
         SELECT recur_id, name, account_id, flow, category, amount, currency,
                day_of_month, frequency, month_of_year, active, start_date,
-               end_date, note
+               end_date, note, external_pipeline
         FROM recurring
         ORDER BY active DESC, frequency, recur_id
         """
@@ -833,7 +838,7 @@ def get_recurring(recur_id: str) -> dict | None:
         """
         SELECT recur_id, name, account_id, flow, category, amount, currency,
                day_of_month, frequency, month_of_year, active, start_date,
-               end_date, note
+               end_date, note, external_pipeline
         FROM recurring WHERE recur_id = %(id)s
         """,
         {"id": recur_id},
@@ -853,11 +858,12 @@ def create_recurring(data: dict) -> str:
         INSERT INTO recurring
             (recur_id, name, account_id, flow, category, amount, currency,
              day_of_month, frequency, month_of_year, active, start_date,
-             end_date, note)
+             end_date, note, external_pipeline)
         VALUES
             (%(recur_id)s, %(name)s, %(account_id)s, %(flow)s, %(category)s,
              %(amount)s, %(currency)s, %(day_of_month)s, %(frequency)s,
-             %(month_of_year)s, %(active)s, %(start_date)s, %(end_date)s, %(note)s)
+             %(month_of_year)s, %(active)s, %(start_date)s, %(end_date)s,
+             %(note)s, %(external_pipeline)s)
         """,
         {"recur_id": recur_id, **data},
     )
@@ -872,7 +878,8 @@ def update_recurring(recur_id: str, data: dict) -> int:
             category = %(category)s, amount = %(amount)s, currency = %(currency)s,
             day_of_month = %(day_of_month)s, frequency = %(frequency)s,
             month_of_year = %(month_of_year)s, active = %(active)s,
-            start_date = %(start_date)s, end_date = %(end_date)s, note = %(note)s
+            start_date = %(start_date)s, end_date = %(end_date)s, note = %(note)s,
+            external_pipeline = %(external_pipeline)s
         WHERE recur_id = %(recur_id)s
         """,
         {"recur_id": recur_id, **data},

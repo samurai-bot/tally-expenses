@@ -9,7 +9,7 @@
   <h2 style="margin:0">Recurring charges</h2>
   <span class="pill">{{ items | length }} templates</span>
 </div>
-<p class="note">Auto-posted to the ledger by the daily poster (00:10). Monthly fires every month on the chosen day; yearly fires once, in the chosen month; every-30-days renews 30 days after the last subscription date (good for SaaS/Netflix). Day 30/31 falls back to month-end in short months.</p>
+<p class="note">Auto-posted to the ledger by the daily poster (05:00) unless marked <b>Email pipeline</b>. Email-pipeline items stay in the projected month but are not posted by Tally. Monthly fires every month on the chosen day; yearly fires once, in the chosen month; every-30-days renews 30 days after the last subscription date (good for SaaS/Netflix). Day 30/31 falls back to month-end in short months.</p>
 
 <div class="rec-list">
 {% for r in items %}
@@ -20,6 +20,7 @@
     </div>
     <div class="rec-meta muted">{{ r.account_id }} · {{ r.category }} · {{ r.flow }}</div>
     <div class="rec-sched">
+      {% if r.external_pipeline %}<span class="tag freq-30">Email pipeline · projection only</span>{% endif %}
       {% if r.frequency == 'yearly' %}
         <span class="tag freq-y">Yearly</span> {{ r.day_of_month }} {{ months[r.month_of_year - 1][1] if r.month_of_year else '?' }}
       {% elif r.frequency == 'every30' %}
@@ -29,6 +30,7 @@
       {% endif %}
       {% if r.next_due %}<span class="muted">· next {{ r.next_due }}</span>{% endif %}
     </div>
+    {% if r.external_pipeline %}<div class="rec-note muted">The email expense pipeline logs this charge. Tally will not auto-post it.</div>{% endif %}
     {% if r.note %}<div class="rec-note muted">{{ r.note }}</div>{% endif %}
     <div class="rec-actions">
       <form method="post" action="/settings/recurring/{{ r.recur_id }}/toggle">
@@ -115,6 +117,9 @@
     </div>
     <div class="field check" style="grid-column: 1 / -1">
       <label class="inline"><input type="checkbox" name="active" {% if not editing or editing.active %}checked{% endif %}> Active</label>
+    </div>
+    <div class="field check" style="grid-column: 1 / -1">
+      <label class="inline"><input type="checkbox" name="external_pipeline" {% if editing and editing.external_pipeline %}checked{% endif %}> Email expense pipeline logs this (projection only; Tally will not auto-post)</label>
     </div>
   </div>
   <div class="filter-actions">

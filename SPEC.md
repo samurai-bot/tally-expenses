@@ -65,7 +65,7 @@ Use `schema.sql` verbatim. Summary:
 
 - `accounts(account_id PK, name, currency, type[asset|liability], active, sort_order)`
 - `categories(name PK, is_discretionary, sort_order)` — `is_discretionary` drives the burn-rate calc.
-- `recurring(recur_id PK, name, account_id FK, flow, category, amount, currency, day_of_month, frequency, month_of_year, active, start_date, end_date, note)` — `frequency` ∈ {`monthly`, `yearly`, `every30`} (`frequency`/`month_of_year` added additively at startup if missing; `schema.sql` itself stays lean)
+- `recurring(recur_id PK, name, account_id FK, flow, category, amount, currency, day_of_month, frequency, month_of_year, active, start_date, end_date, note, external_pipeline)` — `frequency` ∈ {`monthly`, `yearly`, `every30`}; `external_pipeline=true` keeps the charge in projections but delegates ledger logging to the email pipeline (`frequency`/`month_of_year`/`external_pipeline` are added additively at startup if missing)
 - `transactions(id, txn_id UNIQUE, txn_date, account_id FK, flow, category, amount, currency, source, note, created_at)` — **append-only flows ledger**. Partial unique index `(source, txn_date) WHERE source LIKE 'recurring:%'` enforces recurring-poster idempotency.
 - `balances(id, snap_date, account_id FK, balance, currency, source, note, created_at, UNIQUE(snap_date, account_id))` — **stocks**, one row per account per day (the old `snap_key`).
 - `app_config(id=1, myr_to_sgd)` — FX assumption.
@@ -94,8 +94,8 @@ tracks spending without waiting for the next manual snapshot.)
   `txn_id = 'T' + yyyymmddHHMMSS`.
 - Never upsert transactions; each is a distinct row.
 
-### 5.3 Recurring poster (daily 00:10)
-- For each `recurring` row where `active` AND today is within `[start_date, end_date]` (end NULL = open),
+### 5.3 Recurring poster (daily 05:00)
+- For each `recurring` row where `active` AND `external_pipeline=false` AND today is within `[start_date, end_date]` (end NULL = open),
   decide "due today" via `frequency` (shared `is_due()`/`next_due()` helpers in `jobs.py`):
   - **monthly** — due when `today.day == min(day_of_month, days_in_month)` (so day 30/31 fires on
     month-end in short months).
@@ -199,7 +199,7 @@ DB; optionally expose a tiny settings field later).
 
 ## 10. Scheduled jobs (APScheduler, Asia/Singapore)
 
-- `recurring_poster` — cron daily 00:10.
+- `recurring_poster` — cron daily 05:00; skips `external_pipeline` templates.
 - `monthly_rollover` — cron day=1 00:05.
 - `weekly_digest` — cron Mon 07:00. Compute the dashboard metrics; if `RESEND_API_KEY` set, send an
   HTML summary to `DIGEST_TO` via the **Resend API** (`POST https://api.resend.com/emails`,

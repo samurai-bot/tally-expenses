@@ -61,7 +61,10 @@ account, so a partial capture still reflects true standing.
 ### recurring
 Templates that auto-post transactions on a schedule. Fields include `flow`,
 `category`, `amount`, `currency`, `frequency` (`monthly` | `yearly` | `every30`),
-`day_of_month`, `month_of_year` (yearly only), `start_date`/`end_date`, `active`.
+`day_of_month`, `month_of_year` (yearly only), `start_date`/`end_date`, `active`,
+and `external_pipeline`. When `external_pipeline` is true, the template remains
+in dashboard projections but is not posted by Tally's recurring job; an external
+pipeline owns the ledger entry.
 For `every30` (SaaS/Netflix-style subs), `start_date` is the last subscription
 date and renewals fall every 30 days after it. A daily job posts due ones
 idempotently.
@@ -194,7 +197,9 @@ both; `confirm=false` previews without writing.)
 - **Currency:** if the user names a currency, pass it explicitly; otherwise let
   it default to the account's currency. All reporting is SGD-equivalent.
 - **Don't double-count recurring.** Fixed monthly charges (rent, subscriptions)
-  are auto-posted by the recurring job — don't also log them manually.
+are auto-posted by the recurring job unless `external_pipeline` is true. The
+latter are logged by the email expense pipeline and must not also be logged
+manually.
 - **Idempotency:** there's no de-dupe on manual `/api/txn`; re-sending creates a
   second transaction. Track what you've already logged in a session.
 - **Undo mistakes, don't leave them.** If you log to the wrong account, wrong

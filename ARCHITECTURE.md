@@ -81,7 +81,9 @@ Four tables carry the state (`schema.sql`), plus an additively-created `fx_rates
   per account per day; upserted). Source of truth for liquid cash.
 - **`transactions`** — *flows*: an append-only ledger of money moving
   (`expense` | `income` | `transfer`), each with a category and currency.
-- **`recurring`** — templates the poster turns into transactions on schedule.
+- **`recurring`** — scheduled templates; the poster turns normal rows into
+  transactions, while `external_pipeline` rows remain projection-only because
+  another pipeline owns their ledger entry.
 - **`fx_rates`** — per-currency `to_sgd`, refreshed daily (fallbacks on failure).
 
 **Transaction → balance reflection.** When a transaction is inserted, the latest
@@ -110,8 +112,9 @@ if the endpoint is down) → caller confirms → `POST /api/txn` validates `acco
 The agent never holds the API key and never reaches Postgres.
 
 **Scheduled jobs (APScheduler, started in the app lifespan).** Daily recurring poster
-(idempotent via a partial unique index), 1st-of-month rollover, daily FX update (+ once
-on boot), weekly digest email. All run in a background thread inside the app process.
+(idempotent via a partial unique index and skipping `external_pipeline` rows),
+1st-of-month rollover, daily FX update (+ once on boot), weekly digest email. All
+run in a background thread inside the app process.
 
 ## 6. Deployment topology
 
